@@ -1,0 +1,129 @@
+<Window x:Class="CommunicationApp.Views.MainChatWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:CommunicationApp.Converters"
+        Title="İletişim Uygulaması" Height="600" Width="900"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <converters:BoolToBackgroundConverter x:Key="BoolToBackgroundConverter"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Kullanıcı Listesi -->
+        <Border Grid.Column="0" BorderBrush="LightGray" BorderThickness="0,0,1,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Kullanıcılar" 
+                          FontWeight="Bold" FontSize="16" 
+                          Padding="10" Background="LightBlue"/>
+
+                <ListBox x:Name="UsersListBox" Grid.Row="1" 
+                        SelectionChanged="UsersListBox_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="5">
+                                <Ellipse Width="10" Height="10" 
+                                        Fill="{Binding IsOnline, Converter={StaticResource BoolToColorConverter}}" 
+                                        Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Username}" FontWeight="Bold"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Mesajlaşma Alanı -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Seçili Kullanıcı -->
+            <Border Grid.Row="0" Background="LightGray" Padding="10">
+                <TextBlock x:Name="SelectedUserTextBlock" 
+                          Text="Bir kullanıcı seçin" 
+                          FontWeight="Bold" FontSize="14"/>
+            </Border>
+
+            <!-- Mesaj Listesi -->
+            <ScrollViewer x:Name="MessagesScrollViewer" Grid.Row="1" 
+                         VerticalScrollBarVisibility="Auto" 
+                         Padding="10">
+                <ItemsControl x:Name="MessagesItemsControl">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,5" Padding="10" 
+                                   Background="{Binding IsFromMe, Converter={StaticResource BoolToBackgroundConverter}}"
+                                   CornerRadius="5">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding From}" 
+                                              FontWeight="Bold" 
+                                              FontSize="12" 
+                                              Foreground="Gray"/>
+                                    <TextBlock Text="{Binding MessageText}" 
+                                              TextWrapping="Wrap" 
+                                              Margin="0,5,0,0"/>
+                                    <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:dd.MM.yyyy HH:mm}'}" 
+                                              FontSize="10" 
+                                              Foreground="Gray" 
+                                              Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Sistem Mesajları -->
+            <Border Grid.Row="2" Background="Yellow" Padding="5" Visibility="Collapsed">
+                <TextBlock x:Name="SystemMessageTextBlock" 
+                          TextWrapping="Wrap" 
+                          Foreground="DarkRed"/>
+            </Border>
+
+            <!-- Mesaj Gönderme -->
+            <Grid Grid.Row="3" Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox x:Name="MessageTextBox" Grid.Column="0" 
+                        Height="30" Padding="5" 
+                        KeyDown="MessageTextBox_KeyDown"/>
+
+                <Button x:Name="SendFileButton" Grid.Column="1" 
+                       Content="📎 Dosya" 
+                       Width="80" Height="30" 
+                       Margin="5,0" 
+                       Click="SendFileButton_Click"/>
+
+                <Button x:Name="SendButton" Grid.Column="2" 
+                       Content="Gönder" 
+                       Width="80" Height="30" 
+                       Click="SendButton_Click"/>
+            </Grid>
+        </Grid>
+
+        <!-- Menü -->
+        <Menu Grid.ColumnSpan="2" VerticalAlignment="Top">
+            <MenuItem Header="Ayarlar" Click="SettingsMenuItem_Click"/>
+            <MenuItem Header="Çıkış" Click="LogoutMenuItem_Click"/>
+        </Menu>
+    </Grid>
+</Window>
+
