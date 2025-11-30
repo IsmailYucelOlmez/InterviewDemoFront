@@ -39,7 +39,13 @@ public partial class SettingsWindow : Window
 
             _settings.ServerSettings.ServerIp = ServerIpTextBox.Text.Trim();
             _settings.ServerSettings.ServerPort = port;
-            _settings.ServerSettings.HubUrl = $"http://{_settings.ServerSettings.ServerIp}:{port}/communicationHub";
+            // Hub URL'inin sonunda / olmamalı
+            var hubUrl = $"http://{_settings.ServerSettings.ServerIp}:{port}/hub";
+            if (hubUrl.EndsWith("/"))
+            {
+                hubUrl = hubUrl.TrimEnd('/');
+            }
+            _settings.ServerSettings.HubUrl = hubUrl;
 
             _settings.DatabaseSettings.Server = DbServerTextBox.Text.Trim();
             _settings.DatabaseSettings.Database = DbNameTextBox.Text.Trim();

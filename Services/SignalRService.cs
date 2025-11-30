@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommunicationApp.Helpers;
 using CommunicationApp.Models;
 using Microsoft.AspNetCore.SignalR.Client;
-using Newtonsoft.Json;
 
 namespace CommunicationApp.Services;
 
@@ -12,7 +12,7 @@ public class SignalRService : IDisposable
     private HubConnection? _connection;
     private readonly AppSettings _settings;
 
-    public event Action<Message>? MessageReceived;
+    public event Action<ChatMessage>? MessageReceived;
     public event Action<string, bool>? UserStatusChanged;
     public event Action<string>? SystemMessageReceived;
     public event Action<string>? ConnectionStatusChanged;
@@ -36,11 +36,21 @@ public class SignalRService : IDisposable
                 throw new Exception("Hub URL ayarlanmamış. Lütfen Ayarlar menüsünden Hub URL'ini kontrol edin.");
             }
             
+            // URL'nin sonunda / varsa kaldır
+            if (hubUrl.EndsWith("/"))
+            {
+                hubUrl = hubUrl.TrimEnd('/');
+            }
+            
+            // Username'i query string olarak ekle
+            var urlWithUsername = $"{hubUrl}?username={Uri.EscapeDataString(username)}";
+            
             _connection = new HubConnectionBuilder()
-                .WithUrl(hubUrl)
+                .WithUrl(urlWithUsername)
+                .WithAutomaticReconnect() // Otomatik yeniden bağlanma
                 .Build();
 
-            _connection.On<Message>("ReceiveMessage", (message) =>
+            _connection.On<ChatMessage>("ReceiveMessage", (message) =>
             {
                 MessageReceived?.Invoke(message);
             });
@@ -58,15 +68,26 @@ public class SignalRService : IDisposable
             _connection.Closed += async (error) =>
             {
                 ConnectionStatusChanged?.Invoke("Disconnected");
-                await Task.Delay(5000);
-                if (_connection != null)
-                {
-                    await ConnectAsync(username);
-                }
+                // WithAutomaticReconnect() otomatik yeniden bağlanmayı yönetir
+            };
+
+            _connection.Reconnecting += (error) =>
+            {
+                ConnectionStatusChanged?.Invoke("Reconnecting...");
+                return Task.CompletedTask;
+            };
+
+            _connection.Reconnected += (connectionId) =>
+            {
+                ConnectionStatusChanged?.Invoke("Reconnected");
+                return Task.CompletedTask;
             };
 
             await _connection.StartAsync();
-            await _connection.InvokeAsync("RegisterUser", username);
+            
+            // Join metodu ile gruba katıl (RegisterUser yerine)
+            await _connection.InvokeAsync("Join", username);
+            
             ConnectionStatusChanged?.Invoke("Connected");
         }
         catch (Exception ex)
@@ -79,9 +100,7 @@ public class SignalRService : IDisposable
                 errorMessage += "\nLütfen Ayarlar menüsünden Hub URL'ini kontrol edin.";
                 errorMessage += "\nYaygın endpoint formatları:";
                 errorMessage += "\n- /hub";
-                errorMessage += "\n- /hubs/communicationHub";
-                errorMessage += "\n- /api/hub";
-                errorMessage += "\n- /communicationHub";
+                errorMessage += "\n- /hubs/chat";
             }
             ConnectionStatusChanged?.Invoke(errorMessage);
             throw;
@@ -102,15 +121,8 @@ public class SignalRService : IDisposable
     {
         if (_connection?.State == HubConnectionState.Connected)
         {
-            var messageObj = new Message
-            {
-                Type = "chat",
-                From = from,
-                To = to,
-                MessageText = message,
-                Timestamp = DateTime.Now
-            };
-            await _connection.InvokeAsync("SendMessage", messageObj);
+            // Kılavuza göre SendChatMessage metodu kullanılmalı
+            await _connection.InvokeAsync("SendChatMessage", from, to, message);
         }
     }
 
@@ -127,10 +139,65 @@ public class SignalRService : IDisposable
     {
         if (_connection?.State == HubConnectionState.Connected)
         {
-            var usersJson = await _connection.InvokeAsync<string>("GetOnlineUsers");
-            return JsonConvert.DeserializeObject<List<User>>(usersJson) ?? new List<User>();
+            try
+            {
+                // Sunucu doğrudan List<User> döndürüyor, SignalR otomatik deserialize eder
+                var users = await _connection.InvokeAsync<List<User>>("GetOnlineUsers");
+                return users ?? new List<User>();
+            }
+            catch (Exception ex)
+            {
+                
+                throw new Exception($"Kullanıcılar yüklenirken hata: {ex.Message}");
+            }
         }
         return new List<User>();
+    }
+
+    public async Task<List<ChatMessage>> GetMessageHistoryAsync(string fromUser, string toUser)
+    {
+        if (_connection?.State == HubConnectionState.Connected)
+        {
+            try
+            {
+                // İki kullanıcı arasındaki mesaj geçmişini sunucudan al
+                var messages = await _connection.InvokeAsync<List<ChatMessage>>("GetMessageHistory", fromUser, toUser);
+                return messages ?? new List<ChatMessage>();
+            }
+            catch (Exception ex)
+            {
+                // Metod yoksa veya hata varsa boş liste döndür
+                if (ex.Message.Contains("Method does not exist"))
+                {
+                    return new List<ChatMessage>();
+                }
+                throw new Exception($"Mesaj geçmişi yüklenirken hata: {ex.Message}");
+            }
+        }
+        return new List<ChatMessage>();
+    }
+
+    public async Task<List<ChatMessage>> GetUserMessagesAsync(string username)
+    {
+        if (_connection?.State == HubConnectionState.Connected)
+        {
+            try
+            {
+                // Bir kullanıcının tüm mesajlarını sunucudan al
+                var messages = await _connection.InvokeAsync<List<ChatMessage>>("GetUserMessages", username);
+                return messages ?? new List<ChatMessage>();
+            }
+            catch (Exception ex)
+            {
+                // Metod yoksa veya hata varsa boş liste döndür
+                if (ex.Message.Contains("Method does not exist"))
+                {
+                    return new List<ChatMessage>();
+                }
+                throw new Exception($"Kullanıcı mesajları yüklenirken hata: {ex.Message}");
+            }
+        }
+        return new List<ChatMessage>();
     }
 
     public void Dispose()

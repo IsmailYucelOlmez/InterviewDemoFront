@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,6 +13,7 @@ namespace CommunicationApp.Views;
 public partial class MainChatWindow : Window
 {
     private readonly SignalRService _signalRService;
+    private readonly ChatService _chatService;
     private readonly string _currentUsername;
     private string? _selectedUser;
     private readonly ObservableCollection<User> _users;
@@ -27,10 +29,11 @@ public partial class MainChatWindow : Window
             try
             {
                 _signalRService = new SignalRService();
+                _chatService = new ChatService();
             }
             catch (Exception ex)
             {
-                throw new Exception($"SignalR servisi başlatılamadı: {ex.Message}", ex);
+                throw new Exception($"Servisler başlatılamadı: {ex.Message}", ex);
             }
             
             _users = new ObservableCollection<User>();
@@ -91,14 +94,102 @@ public partial class MainChatWindow : Window
         }
     }
 
-    private void OnMessageReceived(Message message)
+    private async Task LoadMessageHistory(string otherUser)
+    {
+        try
+        {
+            // Önce SignalR GetMessageHistory metodunu dene (iki kullanıcı arası mesajlar)
+            var messages = await _signalRService.GetMessageHistoryAsync(_currentUsername, otherUser);
+            
+            // Eğer mesaj yoksa GetUserMessages ile dene
+            if (messages == null || messages.Count == 0)
+            {
+                // Kullanıcının tüm mesajlarını al ve filtrele
+                var allMessages = await _signalRService.GetUserMessagesAsync(_currentUsername);
+                messages = allMessages.Where(m => 
+                    (m.From == _currentUsername && m.To == otherUser) ||
+                    (m.From == otherUser && m.To == _currentUsername)
+                ).ToList();
+            }
+            
+            _messages.Clear();
+            
+            foreach (var message in messages.OrderBy(m => m.Timestamp))
+            {
+                var display = new MessageDisplay
+                {
+                    From = message.From,
+                    MessageText = message.Message,
+                    Timestamp = message.Timestamp,
+                    IsFromMe = message.From == _currentUsername
+                };
+                _messages.Add(display);
+            }
+            
+            ScrollToBottom();
+        }
+        catch
+        {
+            // SignalR başarısız olursa REST API'yi dene (fallback)
+            try
+            {
+                var messages = await _chatService.GetMessageHistoryAsync(_currentUsername, otherUser);
+                _messages.Clear();
+                
+                foreach (var message in messages.OrderBy(m => m.Timestamp))
+                {
+                    var display = new MessageDisplay
+                    {
+                        From = message.From,
+                        MessageText = message.Message,
+                        Timestamp = message.Timestamp,
+                        IsFromMe = message.From == _currentUsername
+                    };
+                    _messages.Add(display);
+                }
+                
+                ScrollToBottom();
+            }
+            catch
+            {
+                // Her iki yöntem de başarısız olursa sessizce devam et
+            }
+        }
+    }
+
+    private void OnMessageReceived(ChatMessage message)
     {
         Dispatcher.Invoke(() =>
         {
+            // Sadece seçili kullanıcıyla olan mesajları göster
+            if (string.IsNullOrWhiteSpace(_selectedUser))
+                return;
+
+            // Mesaj seçili kullanıcıyla ilgili mi kontrol et
+            bool isRelevantMessage = (message.From == _selectedUser && message.To == _currentUsername) ||
+                                     (message.From == _currentUsername && message.To == _selectedUser);
+
+            if (!isRelevantMessage)
+                return;
+
+            // Aynı mesaj zaten listede var mı kontrol et (optimistic update ile eklenmiş olabilir)
+            // Timestamp ve mesaj içeriğine göre kontrol et
+            var existingMessage = _messages.FirstOrDefault(m => 
+                m.From == message.From && 
+                m.MessageText == message.Message && 
+                Math.Abs((m.Timestamp - message.Timestamp).TotalSeconds) < 2); // 2 saniye tolerans
+
+            if (existingMessage != null)
+            {
+                // Mesaj zaten var, sadece timestamp'i güncelle
+                existingMessage.Timestamp = message.Timestamp;
+                return;
+            }
+
             var display = new MessageDisplay
             {
                 From = message.From,
-                MessageText = message.MessageText,
+                MessageText = message.Message,
                 Timestamp = message.Timestamp,
                 IsFromMe = message.From == _currentUsername
             };
@@ -146,13 +237,16 @@ public partial class MainChatWindow : Window
         });
     }
 
-    private void UsersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void UsersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (UsersListBox.SelectedItem is User selectedUser)
         {
             _selectedUser = selectedUser.Username;
             SelectedUserTextBlock.Text = $"Konuşma: {_selectedUser}";
             _messages.Clear();
+            
+            // Seçili kullanıcıyla olan mesaj geçmişini yükle
+            await LoadMessageHistory(_selectedUser);
         }
     }
 
@@ -182,13 +276,26 @@ public partial class MainChatWindow : Window
         if (string.IsNullOrWhiteSpace(messageText))
             return;
 
+        // Mesajı hemen UI'a ekle (optimistic update)
+        var display = new MessageDisplay
+        {
+            From = _currentUsername,
+            MessageText = messageText,
+            Timestamp = DateTime.Now,
+            IsFromMe = true
+        };
+        _messages.Add(display);
+        ScrollToBottom();
+        MessageTextBox.Clear();
+
         try
         {
             await _signalRService.SendMessageAsync(_currentUsername, _selectedUser, messageText);
-            MessageTextBox.Clear();
         }
         catch (Exception ex)
         {
+            // Hata durumunda mesajı listeden kaldır
+            _messages.Remove(display);
             MessageBox.Show($"Mesaj gönderilemedi: {ex.Message}", "Hata", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
