@@ -29,6 +29,13 @@ public class SignalRService : IDisposable
         try
         {
             var hubUrl = _settings.ServerSettings.HubUrl;
+            
+            // Hub URL'ini kontrol et ve düzelt
+            if (string.IsNullOrWhiteSpace(hubUrl))
+            {
+                throw new Exception("Hub URL ayarlanmamış. Lütfen Ayarlar menüsünden Hub URL'ini kontrol edin.");
+            }
+            
             _connection = new HubConnectionBuilder()
                 .WithUrl(hubUrl)
                 .Build();
@@ -64,7 +71,19 @@ public class SignalRService : IDisposable
         }
         catch (Exception ex)
         {
-            ConnectionStatusChanged?.Invoke($"Connection Error: {ex.Message}");
+            var errorMessage = $"Bağlantı hatası: {ex.Message}";
+            if (ex.Message.Contains("404") || ex.Message.Contains("Not Found"))
+            {
+                errorMessage += $"\n\nHub URL: {_settings.ServerSettings.HubUrl}";
+                errorMessage += "\n\n404 hatası alındı. Bu, hub endpoint'inin bulunamadığı anlamına gelir.";
+                errorMessage += "\nLütfen Ayarlar menüsünden Hub URL'ini kontrol edin.";
+                errorMessage += "\nYaygın endpoint formatları:";
+                errorMessage += "\n- /hub";
+                errorMessage += "\n- /hubs/communicationHub";
+                errorMessage += "\n- /api/hub";
+                errorMessage += "\n- /communicationHub";
+            }
+            ConnectionStatusChanged?.Invoke(errorMessage);
             throw;
         }
     }

@@ -19,16 +19,41 @@ public partial class MainChatWindow : Window
 
     public MainChatWindow(string username)
     {
-        InitializeComponent();
-        _currentUsername = username;
-        _signalRService = new SignalRService();
-        _users = new ObservableCollection<User>();
-        _messages = new ObservableCollection<MessageDisplay>();
+        try
+        {
+            InitializeComponent();
+            _currentUsername = username ?? throw new ArgumentNullException(nameof(username));
+            
+            try
+            {
+                _signalRService = new SignalRService();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"SignalR servisi başlatılamadı: {ex.Message}", ex);
+            }
+            
+            _users = new ObservableCollection<User>();
+            _messages = new ObservableCollection<MessageDisplay>();
 
-        UsersListBox.ItemsSource = _users;
-        MessagesItemsControl.ItemsSource = _messages;
+            UsersListBox.ItemsSource = _users;
+            MessagesItemsControl.ItemsSource = _messages;
 
-        InitializeSignalR();
+            // InitializeSignalR async olduğu için exception'ları kendi içinde yakalıyor
+            InitializeSignalR();
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = $"Chat penceresi açılırken hata oluştu:\n\n{ex.Message}";
+            if (ex.InnerException != null)
+            {
+                errorMessage += $"\n\nİç Hata: {ex.InnerException.Message}";
+            }
+            errorMessage += $"\n\nHata Tipi: {ex.GetType().Name}";
+            
+            MessageBox.Show(errorMessage, "Hata", MessageBoxButton.OK, MessageBoxImage.Error);
+            throw; // Exception'ı yukarı fırlat ki App.xaml.cs yakalayabilsin
+        }
     }
 
     private async void InitializeSignalR()

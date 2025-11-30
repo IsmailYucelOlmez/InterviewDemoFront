@@ -29,14 +29,15 @@ public partial class LoginWindow : Window
         }
 
         LoginButton.IsEnabled = false;
+        RegisterButton.IsEnabled = false;
         StatusTextBlock.Visibility = Visibility.Visible;
         StatusTextBlock.Text = "Giriş yapılıyor...";
         StatusTextBlock.Foreground = System.Windows.Media.Brushes.Blue;
 
         try
         {
-            var success = await _authService.LoginAsync(username, password);
-            if (success)
+            var result = await _authService.LoginAsync(username, password);
+            if (result.Success)
             {
                 Username = username;
                 DialogResult = true;
@@ -44,7 +45,7 @@ public partial class LoginWindow : Window
             }
             else
             {
-                ShowStatus("Giriş başarısız! Kullanıcı adı veya şifre hatalı.");
+                ShowStatus(result.ErrorMessage ?? "Giriş başarısız! Kullanıcı adı veya şifre hatalı.");
             }
         }
         catch (Exception ex)
@@ -54,6 +55,79 @@ public partial class LoginWindow : Window
         finally
         {
             LoginButton.IsEnabled = true;
+            RegisterButton.IsEnabled = true;
+        }
+    }
+
+    private async void RegisterButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Email alanını göster
+        if (EmailLabel.Visibility != Visibility.Visible)
+        {
+            EmailLabel.Visibility = Visibility.Visible;
+            EmailTextBox.Visibility = Visibility.Visible;
+            return;
+        }
+
+        var username = UsernameTextBox.Text.Trim();
+        var email = EmailTextBox.Text.Trim();
+        var password = PasswordBox.Password;
+
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            ShowStatus("Kullanıcı adı, e-posta ve şifre boş olamaz!");
+            return;
+        }
+
+        if (!IsValidEmail(email))
+        {
+            ShowStatus("Geçerli bir e-posta adresi giriniz!");
+            return;
+        }
+
+        LoginButton.IsEnabled = false;
+        RegisterButton.IsEnabled = false;
+        StatusTextBlock.Visibility = Visibility.Visible;
+        StatusTextBlock.Text = "Kayıt yapılıyor...";
+        StatusTextBlock.Foreground = System.Windows.Media.Brushes.Blue;
+
+        try
+        {
+            var result = await _authService.RegisterAsync(username, email, password);
+            if (result.Success)
+            {
+                ShowStatus("Kayıt başarılı! Giriş yapabilirsiniz.", System.Windows.Media.Brushes.Green);
+                // Email alanını tekrar gizle
+                EmailLabel.Visibility = Visibility.Collapsed;
+                EmailTextBox.Visibility = Visibility.Collapsed;
+                EmailTextBox.Text = string.Empty;
+            }
+            else
+            {
+                ShowStatus(result.ErrorMessage ?? "Kayıt başarısız! Kullanıcı adı veya e-posta zaten kullanılıyor olabilir.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowStatus($"Bağlantı hatası: {ex.Message}");
+        }
+        finally
+        {
+            LoginButton.IsEnabled = true;
+            RegisterButton.IsEnabled = true;
+        }
+    }
+
+    private bool IsValidEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
         }
     }
 
@@ -63,10 +137,10 @@ public partial class LoginWindow : Window
         settingsWindow.ShowDialog();
     }
 
-    private void ShowStatus(string message)
+    private void ShowStatus(string message, System.Windows.Media.Brush? foreground = null)
     {
         StatusTextBlock.Text = message;
-        StatusTextBlock.Foreground = System.Windows.Media.Brushes.Red;
+        StatusTextBlock.Foreground = foreground ?? System.Windows.Media.Brushes.Red;
         StatusTextBlock.Visibility = Visibility.Visible;
     }
 }

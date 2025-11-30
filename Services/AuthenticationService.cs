@@ -6,42 +6,222 @@ using Newtonsoft.Json;
 
 namespace CommunicationApp.Services;
 
+public class AuthResult
+{
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
 public class AuthenticationService
 {
-    private readonly AppSettings _settings;
     private readonly HttpClient _httpClient;
+    private const string BaseUrl = "http://localhost:5267";
 
     public AuthenticationService()
     {
-        _settings = ConfigHelper.GetSettings();
         _httpClient = new HttpClient();
     }
 
-    public async Task<bool> LoginAsync(string username, string password)
+    public async Task<AuthResult> LoginAsync(string username, string password)
     {
         try
         {
-            var md5Hash = HashHelper.ComputeMD5Hash(password);
-            var sha1Hash = HashHelper.ComputeSHA1Hash(password);
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                return new AuthResult 
+                { 
+                    Success = false, 
+                    ErrorMessage = "Kullanıcı adı ve şifre gereklidir!" 
+                };
+            }
 
+            // Backend düz metin username ve password bekliyor
             var loginRequest = new
             {
-                Username = username,
-                PasswordHashMD5 = md5Hash,
-                PasswordHashSHA1 = sha1Hash
+                username = username,
+                password = password
             };
 
-            var json = JsonConvert.SerializeObject(loginRequest);
+            var json = JsonConvert.SerializeObject(loginRequest, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            });
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var baseUrl = $"http://{_settings.ServerSettings.ServerIp}:{_settings.ServerSettings.ServerPort}";
-            var response = await _httpClient.PostAsync($"{baseUrl}/api/auth/login", content);
+            var response = await _httpClient.PostAsync($"{BaseUrl}/api/Auth/login", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
 
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode)
+            {
+                return new AuthResult { Success = true };
+            }
+            else
+            {
+                string errorMessage = "Giriş başarısız!";
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(responseContent))
+                    {
+                        // Try to parse as JSON first
+                        try
+                        {
+                            var errorObj = JsonConvert.DeserializeObject<dynamic>(responseContent);
+                            if (errorObj != null)
+                            {
+                                // Try different possible error message fields
+                                if (errorObj.message != null)
+                                {
+                                    errorMessage = errorObj.message.ToString() ?? errorMessage;
+                                }
+                                else if (errorObj.Message != null)
+                                {
+                                    errorMessage = errorObj.Message.ToString() ?? errorMessage;
+                                }
+                                else if (errorObj.error != null)
+                                {
+                                    errorMessage = errorObj.error.ToString() ?? errorMessage;
+                                }
+                                else if (errorObj.Error != null)
+                                {
+                                    errorMessage = errorObj.Error.ToString() ?? errorMessage;
+                                }
+                            }
+                        }
+                        catch { }
+                        
+                        // If still default message, use raw response
+                        if (errorMessage == "Giriş başarısız!")
+                        {
+                            errorMessage = responseContent;
+                        }
+                    }
+                }
+                catch
+                {
+                    if (!string.IsNullOrWhiteSpace(responseContent))
+                    {
+                        errorMessage = responseContent;
+                    }
+                }
+
+                return new AuthResult 
+                { 
+                    Success = false, 
+                    ErrorMessage = errorMessage 
+                };
+            }
         }
-        catch
+        catch (HttpRequestException ex)
         {
-            return false;
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = $"Bağlantı hatası: {ex.Message}" 
+            };
+        }
+        catch (Exception ex)
+        {
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = $"Hata: {ex.Message}" 
+            };
+        }
+    }
+
+    public async Task<AuthResult> RegisterAsync(string username, string email, string password)
+    {
+        try
+        {
+            var registerRequest = new
+            {
+                Username = username,
+                Email = email,
+                Password = password
+            };
+
+            var json = JsonConvert.SerializeObject(registerRequest);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync($"{BaseUrl}/api/Auth/register", content);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new AuthResult { Success = true };
+            }
+            else
+            {
+                string errorMessage = "Kayıt başarısız!";
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(responseContent))
+                    {
+                        var errorObj = JsonConvert.DeserializeObject<dynamic>(responseContent);
+                        if (errorObj != null)
+                        {
+                            try
+                            {
+                                if (errorObj.message != null)
+                                {
+                                    errorMessage = errorObj.message.ToString() ?? errorMessage;
+                                }
+                            }
+                            catch { }
+                            
+                            if (errorMessage == "Kayıt başarısız!")
+                            {
+                                try
+                                {
+                                    if (errorObj.Message != null)
+                                    {
+                                        errorMessage = errorObj.Message.ToString() ?? errorMessage;
+                                    }
+                                }
+                                catch { }
+                            }
+                            
+                            if (errorMessage == "Kayıt başarısız!")
+                            {
+                                errorMessage = responseContent;
+                            }
+                        }
+                        else
+                        {
+                            errorMessage = responseContent;
+                        }
+                    }
+                }
+                catch
+                {
+                    if (!string.IsNullOrWhiteSpace(responseContent))
+                    {
+                        errorMessage = responseContent;
+                    }
+                }
+
+                return new AuthResult 
+                { 
+                    Success = false, 
+                    ErrorMessage = errorMessage 
+                };
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = $"Bağlantı hatası: {ex.Message}" 
+            };
+        }
+        catch (Exception ex)
+        {
+            return new AuthResult 
+            { 
+                Success = false, 
+                ErrorMessage = $"Hata: {ex.Message}" 
+            };
         }
     }
 }
