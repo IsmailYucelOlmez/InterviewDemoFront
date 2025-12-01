@@ -300,40 +300,12 @@ public partial class MainChatWindow : Window
         }
     }
 
-    private async void SendFileButton_Click(object sender, RoutedEventArgs e)
+    private void OpenFileEmailWindow_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(_selectedUser))
-        {
-            MessageBox.Show("Lütfen bir kullanıcı seçin.", "Uyarı", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
-        }
-
-        var dialog = new OpenFileDialog
-        {
-            Title = "Gönderilecek Dosyayı Seçin",
-            Filter = "Tüm Dosyalar|*.*"
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            try
-            {
-                var fileData = await File.ReadAllBytesAsync(dialog.FileName);
-                var fileName = Path.GetFileName(dialog.FileName);
-
-                var emailDialog = new EmailInputDialog();
-                if (emailDialog.ShowDialog() == true)
-                {
-                    var email = emailDialog.Email;
-                    await _signalRService.SendFileAsync(_selectedUser, fileName, fileData, email);
-                    MessageBox.Show("Dosya gönderildi.", "Bilgi", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Dosya gönderilemedi: {ex.Message}", "Hata", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+        // Dosyayı mail ile göndermek için ayrı sayfayı aç
+        var window = new FileEmailWindow(_currentUsername);
+        window.Owner = this;
+        window.Show();
     }
 
     private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
