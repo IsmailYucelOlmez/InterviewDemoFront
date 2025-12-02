@@ -15,7 +15,8 @@ public class AuthResult
 public class AuthenticationService
 {
     private readonly HttpClient _httpClient;
-    private const string BaseUrl = "http://localhost:5267";
+    // Üretim ortamı için deploy edilmiş API adresi
+    private const string BaseUrl = "https://chatsapp.runasp.net";
 
     public AuthenticationService()
     {

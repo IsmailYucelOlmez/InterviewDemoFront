@@ -20,11 +20,6 @@ public partial class SettingsWindow : Window
 
         ServerIpTextBox.Text = _settings.ServerSettings.ServerIp;
         ServerPortTextBox.Text = _settings.ServerSettings.ServerPort.ToString();
-
-        DbServerTextBox.Text = _settings.DatabaseSettings.Server;
-        DbNameTextBox.Text = _settings.DatabaseSettings.Database;
-        DbUserIdTextBox.Text = _settings.DatabaseSettings.UserId;
-        DbPasswordBox.Password = _settings.DatabaseSettings.Password;
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -40,17 +35,14 @@ public partial class SettingsWindow : Window
             _settings.ServerSettings.ServerIp = ServerIpTextBox.Text.Trim();
             _settings.ServerSettings.ServerPort = port;
             // Hub URL'inin sonunda / olmamalı
-            var hubUrl = $"http://{_settings.ServerSettings.ServerIp}:{port}/hub";
+            // Port 443 ise varsayılan olarak https kabul edilir, aksi halde http kullanılır
+            var scheme = port == 443 ? "https" : "http";
+            var hubUrl = $"{scheme}://{_settings.ServerSettings.ServerIp}:{port}/hub";
             if (hubUrl.EndsWith("/"))
             {
                 hubUrl = hubUrl.TrimEnd('/');
             }
             _settings.ServerSettings.HubUrl = hubUrl;
-
-            _settings.DatabaseSettings.Server = DbServerTextBox.Text.Trim();
-            _settings.DatabaseSettings.Database = DbNameTextBox.Text.Trim();
-            _settings.DatabaseSettings.UserId = DbUserIdTextBox.Text.Trim();
-            _settings.DatabaseSettings.Password = DbPasswordBox.Password;
 
             ConfigHelper.SaveSettings(_settings);
             ConfigHelper.ReloadSettings();

@@ -11,53 +11,24 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Sunucu ve Veritabanı Ayarları" 
+        <TextBlock Grid.Row="0" Text="Sunucu Ayarları" 
                   FontSize="18" FontWeight="Bold" 
                   Margin="0,0,0,20"/>
 
-        <TabControl Grid.Row="1">
-            <TabItem Header="Sunucu Ayarları">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+        <Grid Grid.Row="1" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="Sunucu IP Adresi:" Margin="0,10,0,5" FontWeight="Bold"/>
-                    <TextBox x:Name="ServerIpTextBox" Grid.Row="1" Margin="0,0,0,15" Height="30" Padding="5"/>
+            <TextBlock Grid.Row="0" Text="Sunucu IP Adresi:" Margin="0,10,0,5" FontWeight="Bold"/>
+            <TextBox x:Name="ServerIpTextBox" Grid.Row="1" Margin="0,0,0,15" Height="30" Padding="5"/>
 
-                    <TextBlock Grid.Row="2" Text="Sunucu Port:" Margin="0,10,0,5" FontWeight="Bold"/>
-                    <TextBox x:Name="ServerPortTextBox" Grid.Row="3" Margin="0,0,0,15" Height="30" Padding="5"/>
-                </Grid>
-            </TabItem>
-
-            <TabItem Header="Veritabanı Ayarları">
-                <Grid Margin="10">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Grid.Row="0" Text="Sunucu:" Margin="0,10,0,5" FontWeight="Bold"/>
-                    <TextBox x:Name="DbServerTextBox" Grid.Row="1" Margin="0,0,0,15" Height="30" Padding="5"/>
-
-                    <TextBlock Grid.Row="2" Text="Veritabanı Adı:" Margin="0,10,0,5" FontWeight="Bold"/>
-                    <TextBox x:Name="DbNameTextBox" Grid.Row="3" Margin="0,0,0,15" Height="30" Padding="5"/>
-
-                    <TextBlock Grid.Row="4" Text="Kullanıcı Adı:" Margin="0,10,0,5" FontWeight="Bold"/>
-                    <TextBox x:Name="DbUserIdTextBox" Grid.Row="5" Margin="0,0,0,15" Height="30" Padding="5"/>
-
-                    <TextBlock Grid.Row="6" Text="Şifre:" Margin="0,10,0,5" FontWeight="Bold"/>
-                    <PasswordBox x:Name="DbPasswordBox" Grid.Row="7" Margin="0,0,0,15" Height="30" Padding="5"/>
-                </Grid>
-            </TabItem>
-        </TabControl>
+            <TextBlock Grid.Row="2" Text="Sunucu Port:" Margin="0,10,0,5" FontWeight="Bold"/>
+            <TextBox x:Name="ServerPortTextBox" Grid.Row="3" Margin="0,0,0,15" Height="30" Padding="5"/>
+        </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button x:Name="SaveButton" Content="Kaydet" Width="100" Height="35" Margin="0,0,10,0" Click="SaveButton_Click"/>

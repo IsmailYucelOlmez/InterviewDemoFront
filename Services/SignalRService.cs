@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Text.Json;
 using CommunicationApp.Helpers;
 using CommunicationApp.Models;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -50,9 +51,38 @@ public class SignalRService : IDisposable
                 .WithAutomaticReconnect() // Otomatik yeniden bağlanma
                 .Build();
 
-            _connection.On<ChatMessage>("ReceiveMessage", (message) =>
+            // Backend, anonim bir payload (type, from, to, message, timestamp:string) gönderiyor.
+            // Bunu önce JsonElement olarak alıp, ChatMessage modeline çeviriyoruz.
+            _connection.On<JsonElement>("ReceiveMessage", (payload) =>
             {
-                MessageReceived?.Invoke(message);
+                try
+                {
+                    var chatMessage = new ChatMessage
+                    {
+                        Type = payload.TryGetProperty("type", out var typeProp)
+                            ? typeProp.GetString() ?? "chat"
+                            : "chat",
+                        From = payload.TryGetProperty("from", out var fromProp)
+                            ? fromProp.GetString() ?? string.Empty
+                            : string.Empty,
+                        To = payload.TryGetProperty("to", out var toProp)
+                            ? toProp.GetString() ?? string.Empty
+                            : string.Empty,
+                        Message = payload.TryGetProperty("message", out var messageProp)
+                            ? messageProp.GetString() ?? string.Empty
+                            : string.Empty,
+                        Timestamp = payload.TryGetProperty("timestamp", out var tsProp)
+                            && DateTime.TryParse(tsProp.GetString(), out var ts)
+                                ? ts
+                                : DateTime.UtcNow
+                    };
+
+                    MessageReceived?.Invoke(chatMessage);
+                }
+                catch
+                {
+                    
+                }
             });
 
             _connection.On<string, bool>("UserStatusChanged", (user, isOnline) =>
