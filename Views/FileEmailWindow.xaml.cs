@@ -19,12 +19,12 @@ public partial class FileEmailWindow : Window
 
     private string? _selectedFilePath;
 
-    public FileEmailWindow(string username)
+    public FileEmailWindow(string username, SignalRService signalRService)
     {
         InitializeComponent();
 
         _currentUsername = username ?? throw new ArgumentNullException(nameof(username));
-        _signalRService = new SignalRService();
+        _signalRService = signalRService ?? throw new ArgumentNullException(nameof(signalRService));
         _mailService = new MailService();
 
         _users = new ObservableCollection<User>();
@@ -37,11 +37,20 @@ public partial class FileEmailWindow : Window
     {
         try
         {
+            // Var olan SignalR bağlantısını kullan.
+            // Eğer bağlantı zaten açıksa tekrar bağlanma, sadece event'leri ata ve kullanıcı listesini yükle.
             _signalRService.UserStatusChanged += OnUserStatusChanged;
             _signalRService.ConnectionStatusChanged += OnConnectionStatusChanged;
 
-            await _signalRService.ConnectAsync(_currentUsername);
-            await LoadOnlineUsers();
+            if (_signalRService.IsConnected)
+            {
+                await LoadOnlineUsers();
+            }
+            else
+            {
+                await _signalRService.ConnectAsync(_currentUsername);
+                await LoadOnlineUsers();
+            }
         }
         catch (Exception ex)
         {
@@ -158,6 +167,9 @@ public partial class FileEmailWindow : Window
             StatusTextBlock.Text = "Dosya mail olarak gönderildi.";
             StatusTextBlock.Foreground = System.Windows.Media.Brushes.Green;
             StatusTextBlock.Visibility = Visibility.Visible;
+
+            // Mail gönderimi sonrası sohbet mesajı gönderme işlemi bu ekranda yapılmıyor.
+            // Sunucu tarafında üretilecek bilgilendirme mesajı yeterli olacaktır.
         }
         catch (Exception ex)
         {
@@ -165,9 +177,11 @@ public partial class FileEmailWindow : Window
         }
     }
 
-    protected override async void OnClosed(EventArgs e)
+    protected override void OnClosed(EventArgs e)
     {
-        await _signalRService.DisconnectAsync();
+        // Ortak kullanılan SignalR bağlantısını kapatma, sadece event aboneliklerini kaldır.
+        _signalRService.UserStatusChanged -= OnUserStatusChanged;
+        _signalRService.ConnectionStatusChanged -= OnConnectionStatusChanged;
         base.OnClosed(e);
     }
 }

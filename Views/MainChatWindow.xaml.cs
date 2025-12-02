@@ -303,7 +303,7 @@ public partial class MainChatWindow : Window
     private void OpenFileEmailWindow_Click(object sender, RoutedEventArgs e)
     {
         // Dosyayı mail ile göndermek için ayrı sayfayı aç
-        var window = new FileEmailWindow(_currentUsername);
+        var window = new FileEmailWindow(_currentUsername, _signalRService);
         window.Owner = this;
         window.Show();
     }
