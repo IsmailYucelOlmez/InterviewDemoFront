@@ -58,19 +58,14 @@
                            FontWeight="Bold" FontSize="14"/>
             </Border>
 
-            <!-- Form Alanı -->
+            <!-- Form Alanı: Sadece dosya seçimi -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0,0,10,0">
-                    <TextBlock Text="E-posta Adresi" FontWeight="Bold" Margin="0,0,0,5"/>
-                    <TextBox x:Name="EmailTextBox" Height="30" Padding="5" />
+                    <TextBlock Text="Seçili kullanıcıya gönderilecek dosya"
+                               FontWeight="Bold"
+                               Margin="0,0,0,10"/>
 
-                    <TextBlock Text="Konu (isteğe bağlı)" FontWeight="Bold" Margin="0,15,0,5"/>
-                    <TextBox x:Name="SubjectTextBox" Height="30" Padding="5" />
-
-                    <TextBlock Text="Mesaj (isteğe bağlı)" FontWeight="Bold" Margin="0,15,0,5"/>
-                    <TextBox x:Name="BodyTextBox" Height="90" Padding="5" TextWrapping="Wrap" AcceptsReturn="True"/>
-
-                    <TextBlock Text="Dosya" FontWeight="Bold" Margin="0,15,0,5"/>
+                    <TextBlock Text="Dosya" FontWeight="Bold" Margin="0,0,0,5"/>
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="SelectFileButton"
                                 Content="Dosya Seç..."

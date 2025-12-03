@@ -276,26 +276,14 @@ public partial class MainChatWindow : Window
         if (string.IsNullOrWhiteSpace(messageText))
             return;
 
-        // Mesajı hemen UI'a ekle (optimistic update)
-        var display = new MessageDisplay
-        {
-            From = _currentUsername,
-            MessageText = messageText,
-            Timestamp = DateTime.Now,
-            IsFromMe = true
-        };
-        _messages.Add(display);
-        ScrollToBottom();
-        MessageTextBox.Clear();
-
         try
         {
             await _signalRService.SendMessageAsync(_currentUsername, _selectedUser, messageText);
+            
+            MessageTextBox.Clear();
         }
         catch (Exception ex)
         {
-            // Hata durumunda mesajı listeden kaldır
-            _messages.Remove(display);
             MessageBox.Show($"Mesaj gönderilemedi: {ex.Message}", "Hata", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

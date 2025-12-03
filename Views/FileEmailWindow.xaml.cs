@@ -16,6 +16,7 @@ public partial class FileEmailWindow : Window
 
     private readonly ObservableCollection<User> _users;
     private string? _selectedUser;
+    private string? _selectedUserEmail;
 
     private string? _selectedFilePath;
 
@@ -106,17 +107,8 @@ public partial class FileEmailWindow : Window
         if (UsersListBox.SelectedItem is User selectedUser)
         {
             _selectedUser = selectedUser.Username;
+            _selectedUserEmail = selectedUser.Email;
             SelectedUserTextBlock.Text = $"Seçili kullanıcı: {_selectedUser}";
-
-            // Seçili kullanıcının e-posta adresini otomatik olarak email alanına yaz
-            if (!string.IsNullOrWhiteSpace(selectedUser.Email))
-            {
-                EmailTextBox.Text = selectedUser.Email;
-            }
-            else
-            {
-                EmailTextBox.Text = string.Empty;
-            }
         }
     }
 
@@ -143,10 +135,9 @@ public partial class FileEmailWindow : Window
             return;
         }
 
-        var email = EmailTextBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(email))
+        if (string.IsNullOrWhiteSpace(_selectedUserEmail))
         {
-            MessageBox.Show("Lütfen bir e-posta adresi girin.", "Uyarı", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("Seçili kullanıcının e-posta adresi bulunamadı.", "Uyarı", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -162,7 +153,7 @@ public partial class FileEmailWindow : Window
             var fileName = Path.GetFileName(_selectedFilePath);
 
             // REST API üzerinden mail ile dosya gönder
-            await _mailService.SendFileByMailAsync(_currentUsername, _selectedUser!, email, fileName, fileData);
+            await _mailService.SendFileByMailAsync(_currentUsername, _selectedUser!, _selectedUserEmail!, fileName, fileData);
 
             StatusTextBlock.Text = "Dosya mail olarak gönderildi.";
             StatusTextBlock.Foreground = System.Windows.Media.Brushes.Green;
