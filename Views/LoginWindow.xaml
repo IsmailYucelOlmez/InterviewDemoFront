@@ -26,7 +26,6 @@
         <PasswordBox x:Name="PasswordBox" Grid.Row="5" Margin="0,0,0,20" Height="30" Padding="5"/>
 
         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button x:Name="SettingsButton" Content="Ayarlar" Width="80" Height="35" Margin="0,0,10,0" Click="SettingsButton_Click"/>
             <Button x:Name="RegisterButton" Content="Kayıt Ol" Width="100" Height="35" Margin="0,0,10,0" Click="RegisterButton_Click"/>
             <Button x:Name="LoginButton" Content="Giriş Yap" Width="100" Height="35" Click="LoginButton_Click"/>
         </StackPanel>

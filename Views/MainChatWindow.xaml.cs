@@ -42,7 +42,6 @@ public partial class MainChatWindow : Window
             UsersListBox.ItemsSource = _users;
             MessagesItemsControl.ItemsSource = _messages;
 
-            // InitializeSignalR async olduğu için exception'ları kendi içinde yakalıyor
             InitializeSignalR();
         }
         catch (Exception ex)
@@ -55,7 +54,7 @@ public partial class MainChatWindow : Window
             errorMessage += $"\n\nHata Tipi: {ex.GetType().Name}";
             
             MessageBox.Show(errorMessage, "Hata", MessageBoxButton.OK, MessageBoxImage.Error);
-            throw; // Exception'ı yukarı fırlat ki App.xaml.cs yakalayabilsin
+            throw;
         }
     }
 
@@ -152,7 +151,7 @@ public partial class MainChatWindow : Window
             }
             catch
             {
-                // Her iki yöntem de başarısız olursa sessizce devam et
+                throw new Exception("Mesaj geçmişi alınamadı");
             }
         }
     }
@@ -161,19 +160,16 @@ public partial class MainChatWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
-            // Sadece seçili kullanıcıyla olan mesajları göster
+
             if (string.IsNullOrWhiteSpace(_selectedUser))
                 return;
 
-            // Mesaj seçili kullanıcıyla ilgili mi kontrol et
             bool isRelevantMessage = (message.From == _selectedUser && message.To == _currentUsername) ||
                                      (message.From == _currentUsername && message.To == _selectedUser);
 
             if (!isRelevantMessage)
                 return;
 
-            // Aynı mesaj zaten listede var mı kontrol et (optimistic update ile eklenmiş olabilir)
-            // Timestamp ve mesaj içeriğine göre kontrol et
             var existingMessage = _messages.FirstOrDefault(m => 
                 m.From == message.From && 
                 m.MessageText == message.Message && 
@@ -181,7 +177,6 @@ public partial class MainChatWindow : Window
 
             if (existingMessage != null)
             {
-                // Mesaj zaten var, sadece timestamp'i güncelle
                 existingMessage.Timestamp = message.Timestamp;
                 return;
             }
@@ -294,12 +289,6 @@ public partial class MainChatWindow : Window
         var window = new FileEmailWindow(_currentUsername, _signalRService);
         window.Owner = this;
         window.Show();
-    }
-
-    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
-    {
-        var settingsWindow = new SettingsWindow();
-        settingsWindow.ShowDialog();
     }
 
     private async void LogoutMenuItem_Click(object sender, RoutedEventArgs e)

@@ -18,7 +18,6 @@
 
         <!-- Menü -->
         <Menu Grid.Row="0">
-            <MenuItem Header="Ayarlar" Click="SettingsMenuItem_Click"/>
             <MenuItem Header="Çıkış" Click="LogoutMenuItem_Click"/>
         </Menu>
 

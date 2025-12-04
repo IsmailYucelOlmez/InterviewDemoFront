@@ -11,7 +11,7 @@ namespace CommunicationApp.Services;
 public class SignalRService : IDisposable
 {
     private HubConnection? _connection;
-    private readonly AppSettings _settings;
+    private readonly ServerSettings _settings;
 
     public event Action<ChatMessage>? MessageReceived;
     public event Action<string, bool>? UserStatusChanged;
@@ -29,18 +29,12 @@ public class SignalRService : IDisposable
     {
         try
         {
-            var hubUrl = _settings.ServerSettings.HubUrl;
+            var hubUrl = _settings.HubUrl;
             
             // Hub URL'ini kontrol et ve düzelt
             if (string.IsNullOrWhiteSpace(hubUrl))
             {
                 throw new Exception("Hub URL ayarlanmamış. Lütfen Ayarlar menüsünden Hub URL'ini kontrol edin.");
-            }
-            
-            // URL'nin sonunda / varsa kaldır
-            if (hubUrl.EndsWith("/"))
-            {
-                hubUrl = hubUrl.TrimEnd('/');
             }
             
             // Username'i query string olarak ekle
@@ -97,8 +91,7 @@ public class SignalRService : IDisposable
 
             _connection.Closed += async (error) =>
             {
-                ConnectionStatusChanged?.Invoke("Disconnected");
-                // WithAutomaticReconnect() otomatik yeniden bağlanmayı yönetir
+                ConnectionStatusChanged?.Invoke("Disconnected");             
             };
 
             _connection.Reconnecting += (error) =>
@@ -125,7 +118,7 @@ public class SignalRService : IDisposable
             var errorMessage = $"Bağlantı hatası: {ex.Message}";
             if (ex.Message.Contains("404") || ex.Message.Contains("Not Found"))
             {
-                errorMessage += $"\n\nHub URL: {_settings.ServerSettings.HubUrl}";
+                errorMessage += $"\n\nHub URL: {_settings.HubUrl}";
                 errorMessage += "\n\n404 hatası alındı. Bu, hub endpoint'inin bulunamadığı anlamına gelir.";
                 errorMessage += "\nLütfen Ayarlar menüsünden Hub URL'ini kontrol edin.";
                 errorMessage += "\nYaygın endpoint formatları:";

@@ -61,7 +61,6 @@ public partial class LoginWindow : Window
 
     private async void RegisterButton_Click(object sender, RoutedEventArgs e)
     {
-        // Email alanını göster
         if (EmailLabel.Visibility != Visibility.Visible)
         {
             EmailLabel.Visibility = Visibility.Visible;
@@ -97,7 +96,7 @@ public partial class LoginWindow : Window
             if (result.Success)
             {
                 ShowStatus("Kayıt başarılı! Giriş yapabilirsiniz.", System.Windows.Media.Brushes.Green);
-                // Email alanını tekrar gizle
+
                 EmailLabel.Visibility = Visibility.Collapsed;
                 EmailTextBox.Visibility = Visibility.Collapsed;
                 EmailTextBox.Text = string.Empty;
@@ -129,12 +128,6 @@ public partial class LoginWindow : Window
         {
             return false;
         }
-    }
-
-    private void SettingsButton_Click(object sender, RoutedEventArgs e)
-    {
-        var settingsWindow = new SettingsWindow();
-        settingsWindow.ShowDialog();
     }
 
     private void ShowStatus(string message, System.Windows.Media.Brush? foreground = null)

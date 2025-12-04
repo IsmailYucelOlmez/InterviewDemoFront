@@ -38,8 +38,6 @@ public partial class FileEmailWindow : Window
     {
         try
         {
-            // Var olan SignalR bağlantısını kullan.
-            // Eğer bağlantı zaten açıksa tekrar bağlanma, sadece event'leri ata ve kullanıcı listesini yükle.
             _signalRService.UserStatusChanged += OnUserStatusChanged;
             _signalRService.ConnectionStatusChanged += OnConnectionStatusChanged;
 
@@ -152,15 +150,12 @@ public partial class FileEmailWindow : Window
             var fileData = await File.ReadAllBytesAsync(_selectedFilePath);
             var fileName = Path.GetFileName(_selectedFilePath);
 
-            // REST API üzerinden mail ile dosya gönder
             await _mailService.SendFileByMailAsync(_currentUsername, _selectedUser!, _selectedUserEmail!, fileName, fileData);
 
             StatusTextBlock.Text = "Dosya mail olarak gönderildi.";
             StatusTextBlock.Foreground = System.Windows.Media.Brushes.Green;
             StatusTextBlock.Visibility = Visibility.Visible;
 
-            // Mail gönderimi sonrası sohbet mesajı gönderme işlemi bu ekranda yapılmıyor.
-            // Sunucu tarafında üretilecek bilgilendirme mesajı yeterli olacaktır.
         }
         catch (Exception ex)
         {
@@ -170,7 +165,6 @@ public partial class FileEmailWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        // Ortak kullanılan SignalR bağlantısını kapatma, sadece event aboneliklerini kaldır.
         _signalRService.UserStatusChanged -= OnUserStatusChanged;
         _signalRService.ConnectionStatusChanged -= OnConnectionStatusChanged;
         base.OnClosed(e);

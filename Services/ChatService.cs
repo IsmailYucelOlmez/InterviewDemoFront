@@ -12,36 +12,17 @@ namespace CommunicationApp.Services;
 public class ChatService
 {
     private readonly HttpClient _httpClient;
-    private readonly AppSettings _settings;
 
     public ChatService()
     {
         _httpClient = new HttpClient();
-        _settings = ConfigHelper.GetSettings();
     }
 
-    private string GetBaseUrl()
-    {
-        var hubUrl = _settings.ServerSettings.HubUrl;
-        // HubUrl'den base URL'i çıkar (örn: http://localhost:5267/hub -> http://localhost:5267)
-        if (Uri.TryCreate(hubUrl, UriKind.Absolute, out var uri))
-        {
-            return $"{uri.Scheme}://{uri.Host}:{uri.Port}";
-        }
-        // Fallback: ServerIp ve ServerPort kullan
-        var scheme = hubUrl.StartsWith("https", StringComparison.OrdinalIgnoreCase) ? "https" : "http";
-        return $"{scheme}://{_settings.ServerSettings.ServerIp}:{_settings.ServerSettings.ServerPort}";
-    }
-
-    /// <summary>
-    /// İki kullanıcı arasındaki mesaj geçmişini getirir
-    /// GET /api/chat/history?from=user1&to=user2
-    /// </summary>
     public async Task<List<ChatMessage>> GetMessageHistoryAsync(string fromUser, string toUser)
     {
         try
         {
-            var baseUrl = GetBaseUrl();
+            var baseUrl = ConfigHelper.GetBaseUrl();
             var url = $"{baseUrl}/api/chat/history?from={Uri.EscapeDataString(fromUser)}&to={Uri.EscapeDataString(toUser)}";
             
             var response = await _httpClient.GetAsync(url);
@@ -68,15 +49,11 @@ public class ChatService
         }
     }
 
-    /// <summary>
-    /// Bir kullanıcının tüm mesajlarını getirir
-    /// GET /api/chat/user/{username}/messages
-    /// </summary>
     public async Task<List<ChatMessage>> GetUserMessagesAsync(string username)
     {
         try
         {
-            var baseUrl = GetBaseUrl();
+            var baseUrl = ConfigHelper.GetBaseUrl();
             var url = $"{baseUrl}/api/chat/user/{Uri.EscapeDataString(username)}/messages";
             
             var response = await _httpClient.GetAsync(url);
@@ -103,9 +80,6 @@ public class ChatService
         }
     }
 
-    /// <summary>
-    /// Bir kullanıcının belirli bir kullanıcıyla olan mesajlarını filtreler
-    /// </summary>
     public async Task<List<ChatMessage>> GetMessagesWithUserAsync(string currentUser, string otherUser)
     {
         // Önce kullanıcının tüm mesajlarını al

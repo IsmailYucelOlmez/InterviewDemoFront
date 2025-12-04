@@ -15,8 +15,6 @@ public class AuthResult
 public class AuthenticationService
 {
     private readonly HttpClient _httpClient;
-    // Üretim ortamı için deploy edilmiş API adresi
-    private const string BaseUrl = "https://chatsapp.runasp.net";
 
     public AuthenticationService()
     {
@@ -36,7 +34,6 @@ public class AuthenticationService
                 };
             }
 
-            // Backend düz metin username ve password bekliyor
             var loginRequest = new
             {
                 username = username,
@@ -49,7 +46,8 @@ public class AuthenticationService
             });
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync($"{BaseUrl}/api/Auth/login", content);
+            var baseUrl = ConfigHelper.GetBaseUrl();
+            var response = await _httpClient.PostAsync($"{baseUrl}/api/Auth/login", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -63,7 +61,6 @@ public class AuthenticationService
                 {
                     if (!string.IsNullOrWhiteSpace(responseContent))
                     {
-                        // Try to parse as JSON first
                         try
                         {
                             var errorObj = JsonConvert.DeserializeObject<dynamic>(responseContent);
@@ -90,7 +87,6 @@ public class AuthenticationService
                         }
                         catch { }
                         
-                        // If still default message, use raw response
                         if (errorMessage == "Giriş başarısız!")
                         {
                             errorMessage = responseContent;
@@ -144,7 +140,8 @@ public class AuthenticationService
             var json = JsonConvert.SerializeObject(registerRequest);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync($"{BaseUrl}/api/Auth/register", content);
+            var baseUrl = ConfigHelper.GetBaseUrl();
+            var response = await _httpClient.PostAsync($"{baseUrl}/api/Auth/register", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)

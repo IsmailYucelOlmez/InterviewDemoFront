@@ -1,43 +1,46 @@
+using System;
 using System.IO;
 using CommunicationApp.Models;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace CommunicationApp.Helpers;
 
 public static class ConfigHelper
 {
-    private static AppSettings? _settings;
+    private static ServerSettings? _settings;
     private static readonly string ConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
 
-    public static AppSettings GetSettings()
+    public static ServerSettings GetSettings()
     {
         if (_settings != null)
             return _settings;
 
         if (!File.Exists(ConfigPath))
         {
-            _settings = new AppSettings();
-            SaveSettings(_settings);
+            _settings = new ServerSettings();
             return _settings;
         }
 
         var json = File.ReadAllText(ConfigPath);
-        _settings = JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
+        var jObject = JObject.Parse(json);
+        var serverSettingsToken = jObject["ServerSettings"];
+        _settings = serverSettingsToken?.ToObject<ServerSettings>() ?? new ServerSettings();
         return _settings;
     }
 
-    public static void SaveSettings(AppSettings settings)
+    public static string GetBaseUrl()
     {
-        _settings = settings;
-        var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-        File.WriteAllText(ConfigPath, json);
-    }
+        var settings = GetSettings();
+        var hubUrl = settings.HubUrl;
 
-    public static void ReloadSettings()
-    {
-        _settings = null;
-        GetSettings();
+        if (Uri.TryCreate(hubUrl, UriKind.Absolute, out var uri))
+        {
+            return $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+        }
+
+        var scheme = hubUrl.StartsWith("https", StringComparison.OrdinalIgnoreCase) ? "https" : "http";
+        return $"{scheme}://{settings.ServerIp}:{settings.ServerPort}";
     }
 }
 
