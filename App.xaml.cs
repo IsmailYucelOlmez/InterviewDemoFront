@@ -7,14 +7,11 @@ using CommunicationApp.Views;
 
 namespace CommunicationApp;
 
-/// <summary>
-/// Interaction logic for App.xaml
-/// </summary>
 public partial class App : Application
 {
     protected void Application_Startup(object sender, StartupEventArgs e)
     {
-        // ShutdownMode'u OnExplicitShutdown yap ki sadece bizim istediğimiz zaman kapansın
+
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         
         try
@@ -27,8 +24,8 @@ public partial class App : Application
                 try
                 {
                     var mainWindow = new MainChatWindow(loginWindow.Username);
-                    MainWindow = mainWindow; // MainWindow property'sini ayarla
-                    ShutdownMode = ShutdownMode.OnMainWindowClose; // Artık main window kapandığında kapanabilir
+                    MainWindow = mainWindow;
+                    ShutdownMode = ShutdownMode.OnMainWindowClose;
                     mainWindow.Show();
                 }
                 catch (Exception ex)
@@ -66,9 +63,6 @@ public partial class App : Application
         
         MessageBox.Show(errorMessage, "Kritik Hata", MessageBoxButton.OK, MessageBoxImage.Error);
         
-        // Exception'ı işaretle ki uygulama kapanmasın (opsiyonel)
-        // e.Handled = true;
-        
         Shutdown();
     }
 
@@ -87,7 +81,7 @@ public partial class App : Application
         }
         catch
         {
-            // Log yazma hatası olursa sessizce geç
+            
         }
     }
 }

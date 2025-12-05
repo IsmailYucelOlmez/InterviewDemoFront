@@ -21,6 +21,28 @@ public class AuthenticationService
         _httpClient = new HttpClient();
     }
 
+    private static string ExtractErrorMessage(string responseContent, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(responseContent))
+            return fallback;
+
+        try
+        {
+            var obj = JsonConvert.DeserializeObject<dynamic>(responseContent);
+            if (obj == null) return responseContent;
+
+            return (string?)obj.message
+                ?? (string?)obj.Message
+                ?? (string?)obj.error
+                ?? (string?)obj.Error
+                ?? responseContent;
+        }
+        catch
+        {
+            return responseContent;
+        }
+    }
+
     public async Task<AuthResult> LoginAsync(string username, string password)
     {
         try
@@ -56,50 +78,7 @@ public class AuthenticationService
             }
             else
             {
-                string errorMessage = "Giriş başarısız!";
-                try
-                {
-                    if (!string.IsNullOrWhiteSpace(responseContent))
-                    {
-                        try
-                        {
-                            var errorObj = JsonConvert.DeserializeObject<dynamic>(responseContent);
-                            if (errorObj != null)
-                            {
-                                // Try different possible error message fields
-                                if (errorObj.message != null)
-                                {
-                                    errorMessage = errorObj.message.ToString() ?? errorMessage;
-                                }
-                                else if (errorObj.Message != null)
-                                {
-                                    errorMessage = errorObj.Message.ToString() ?? errorMessage;
-                                }
-                                else if (errorObj.error != null)
-                                {
-                                    errorMessage = errorObj.error.ToString() ?? errorMessage;
-                                }
-                                else if (errorObj.Error != null)
-                                {
-                                    errorMessage = errorObj.Error.ToString() ?? errorMessage;
-                                }
-                            }
-                        }
-                        catch { }
-                        
-                        if (errorMessage == "Giriş başarısız!")
-                        {
-                            errorMessage = responseContent;
-                        }
-                    }
-                }
-                catch
-                {
-                    if (!string.IsNullOrWhiteSpace(responseContent))
-                    {
-                        errorMessage = responseContent;
-                    }
-                }
+                var errorMessage = ExtractErrorMessage(responseContent, "Giriş başarısız!");
 
                 return new AuthResult 
                 { 
@@ -150,54 +129,8 @@ public class AuthenticationService
             }
             else
             {
-                string errorMessage = "Kayıt başarısız!";
-                try
-                {
-                    if (!string.IsNullOrWhiteSpace(responseContent))
-                    {
-                        var errorObj = JsonConvert.DeserializeObject<dynamic>(responseContent);
-                        if (errorObj != null)
-                        {
-                            try
-                            {
-                                if (errorObj.message != null)
-                                {
-                                    errorMessage = errorObj.message.ToString() ?? errorMessage;
-                                }
-                            }
-                            catch { }
-                            
-                            if (errorMessage == "Kayıt başarısız!")
-                            {
-                                try
-                                {
-                                    if (errorObj.Message != null)
-                                    {
-                                        errorMessage = errorObj.Message.ToString() ?? errorMessage;
-                                    }
-                                }
-                                catch { }
-                            }
-                            
-                            if (errorMessage == "Kayıt başarısız!")
-                            {
-                                errorMessage = responseContent;
-                            }
-                        }
-                        else
-                        {
-                            errorMessage = responseContent;
-                        }
-                    }
-                }
-                catch
-                {
-                    if (!string.IsNullOrWhiteSpace(responseContent))
-                    {
-                        errorMessage = responseContent;
-                    }
-                }
-
+                var errorMessage = ExtractErrorMessage(responseContent, "Kayıt başarısız!");
+                
                 return new AuthResult 
                 { 
                     Success = false, 

@@ -31,22 +31,21 @@ public class SignalRService : IDisposable
         {
             var hubUrl = _settings.HubUrl;
             
-            // Hub URL'ini kontrol et ve düzelt
+            
             if (string.IsNullOrWhiteSpace(hubUrl))
             {
                 throw new Exception("Hub URL ayarlanmamış. Lütfen Ayarlar menüsünden Hub URL'ini kontrol edin.");
             }
             
-            // Username'i query string olarak ekle
+            
             var urlWithUsername = $"{hubUrl}?username={Uri.EscapeDataString(username)}";
             
             _connection = new HubConnectionBuilder()
                 .WithUrl(urlWithUsername)
-                .WithAutomaticReconnect() // Otomatik yeniden bağlanma
+                .WithAutomaticReconnect() 
                 .Build();
 
-            // Backend, anonim bir payload (type, from, to, message, timestamp:string) gönderiyor.
-            // Bunu önce JsonElement olarak alıp, ChatMessage modeline çeviriyoruz.
+            
             _connection.On<JsonElement>("ReceiveMessage", (payload) =>
             {
                 try
@@ -89,9 +88,10 @@ public class SignalRService : IDisposable
                 SystemMessageReceived?.Invoke(message);
             });
 
-            _connection.Closed += async (error) =>
+            _connection.Closed += (error) =>
             {
-                ConnectionStatusChanged?.Invoke("Disconnected");             
+                ConnectionStatusChanged?.Invoke("Disconnected");
+                return Task.CompletedTask;
             };
 
             _connection.Reconnecting += (error) =>
@@ -108,7 +108,7 @@ public class SignalRService : IDisposable
 
             await _connection.StartAsync();
             
-            // Join metodu ile gruba katıl (RegisterUser yerine)
+            
             await _connection.InvokeAsync("Join", username);
             
             ConnectionStatusChanged?.Invoke("Connected");
@@ -144,7 +144,7 @@ public class SignalRService : IDisposable
     {
         if (_connection?.State == HubConnectionState.Connected)
         {
-            // Kılavuza göre SendChatMessage metodu kullanılmalı
+            
             await _connection.InvokeAsync("SendChatMessage", from, to, message);
         }
     }
@@ -164,7 +164,7 @@ public class SignalRService : IDisposable
         {
             try
             {
-                // Sunucu doğrudan List<User> döndürüyor, SignalR otomatik deserialize eder
+                
                 var users = await _connection.InvokeAsync<List<User>>("GetOnlineUsers");
                 return users ?? new List<User>();
             }
@@ -183,13 +183,13 @@ public class SignalRService : IDisposable
         {
             try
             {
-                // İki kullanıcı arasındaki mesaj geçmişini sunucudan al
+                
                 var messages = await _connection.InvokeAsync<List<ChatMessage>>("GetMessageHistory", fromUser, toUser);
                 return messages ?? new List<ChatMessage>();
             }
             catch (Exception ex)
             {
-                // Metod yoksa veya hata varsa boş liste döndür
+                
                 if (ex.Message.Contains("Method does not exist"))
                 {
                     return new List<ChatMessage>();
@@ -206,13 +206,13 @@ public class SignalRService : IDisposable
         {
             try
             {
-                // Bir kullanıcının tüm mesajlarını sunucudan al
+                
                 var messages = await _connection.InvokeAsync<List<ChatMessage>>("GetUserMessages", username);
                 return messages ?? new List<ChatMessage>();
             }
             catch (Exception ex)
             {
-                // Metod yoksa veya hata varsa boş liste döndür
+                
                 if (ex.Message.Contains("Method does not exist"))
                 {
                     return new List<ChatMessage>();
